@@ -50,6 +50,9 @@ class DecisionTree:
         self.x = x
         self.y = y
 
+    def set_root(self, root:Split) -> None:
+        self.root = root
+
     def _eval_split(self):
         pass
 
