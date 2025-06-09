@@ -19,8 +19,6 @@ Takes some 1-d input and returns a 1-d prediction
 # Optimization criteria
 # 1\N * sum [ y_i * ln(f_ID3(x_i) + (1 - y_i) * ln(1 - f_ID3(x_i)) ]
 
-tree = dectree.DecisionTree()
-print(tree.predict(1))
 
 # Read in csv
 filename = "project_data.csv"
@@ -41,3 +39,4 @@ x.pop(0)
 
 time = [float(val) for val in time]
 x = [float(val) for val in x]
+
