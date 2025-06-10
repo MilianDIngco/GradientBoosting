@@ -70,7 +70,7 @@ class DecisionTree:
         self.root = root
 
     def start_train(self):
-        self._train(self.root, 0, len(self.y) - 1, 0)
+        self._train(self.root, 0, len(self.y), 0)
         self._assign_predictions()
 
     def _assign_predictions(self):
@@ -107,7 +107,7 @@ class DecisionTree:
         # Find children
         split.left = Split()
         split.right = Split()
-        self._train(split.left, min_index, index - 1, depth + 1)
+        self._train(split.left, min_index, index, depth + 1)
         self._train(split.right, index,  max_index, depth + 1)
 
     # Returns a tuple of the best found split value and the variance reduction

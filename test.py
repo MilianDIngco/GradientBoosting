@@ -1,15 +1,16 @@
-import dectree
+import dectree as dt
+import gradboost as gb
 import random
 
 print("--------------------Decision Tree Prediction-----------------")
-tree = dectree.DecisionTree()
-root = dectree.Split(0, 10, 10)
-root.left = dectree.Split(0, 5, 5)
-root.right = dectree.Split(0, 15, 15)
-root.left.left = dectree.Split(0, 2.5, 2.5)
-root.left.right = dectree.Split(0, 7.5, 7.5)
-root.right.left = dectree.Split(0, 12.5, 12.5)
-root.right.right = dectree.Split(0, 17.5, 17.5)
+tree = dt.DecisionTree()
+root = dt.Split(0, 10, 10)
+root.left = dt.Split(0, 5, 5)
+root.right = dt.Split(0, 15, 15)
+root.left.left = dt.Split(0, 2.5, 2.5)
+root.left.right = dt.Split(0, 7.5, 7.5)
+root.right.left = dt.Split(0, 12.5, 12.5)
+root.right.right = dt.Split(0, 17.5, 17.5)
 
 tree.set_root(root)
 
@@ -101,7 +102,7 @@ tree.set_data(x, good_set)
 good_initial_variance = tree._calc_variance(0, len(x))
 print(f"Good initial variance: {good_initial_variance}")
 for i in range(20):
-    split = dectree.Split(feature_value=x[i])
+    split = dt.Split(feature_value=x[i])
     variance_reduction = tree._eval_split(split, 0, len(x), good_initial_variance)
     print(f"Good set evaluated at {i}\n Variance reduction of {variance_reduction}")
 
@@ -110,7 +111,7 @@ tree.set_data(x, uniform_set)
 uniform_initial_variance = tree._calc_variance(0, len(x))
 print(f"Uniform initial variance: {uniform_initial_variance}")
 for i in range(20):
-    split = dectree.Split(feature_value=i)
+    split = dt.Split(feature_value=i)
     variance_reduction = tree._eval_split(split, 0, len(x), uniform_initial_variance)
     print(f"Uniform set evaluated at {i}\n Variance reduction of {variance_reduction}")
 
@@ -163,7 +164,7 @@ for i in range(5):
 for i in range(5):
     y.append(200)
 
-finalboss = dectree.DecisionTree(x, y, epsilon, max_depth, n_tests)
+finalboss = dt.DecisionTree(x, y, epsilon, max_depth, n_tests)
 finalboss.start_train()
 for i in range(N):
     prediction = finalboss.predict(x[i])
@@ -176,7 +177,7 @@ max_depth = 100
 n_tests = 20
 x = [float(i) for i in range(N)]
 y = [val ** 2 for val in x]
-finalboss = dectree.DecisionTree(x, y, epsilon, max_depth, n_tests)
+finalboss = dt.DecisionTree(x, y, epsilon, max_depth, n_tests)
 finalboss.start_train()
 for i in range(N):
     prediction = finalboss.predict(x[i])
@@ -190,16 +191,72 @@ for i in range(N):
 
 
 # Testing making a constant model with decision tree
-x = [0.0]
-y = [0.0]
+print("--------------------Constant tree--------------------")
+val = 9.0
+constree = dt.DecisionTree([0.0], [val], 0, 1, 1)
+constree.start_train()
+print(constree.predict(float(0)))
+
+# Test finding residuals
+print("---------------------Finding residuals-------------------")
+M = 0
+alpha = 1
 epsilon = 0
 max_depth = 1
 n_tests = 1
-constree = dectree.DecisionTree(x, y, epsilon, max_depth, n_tests)
-constree.start_train()
-for i in range(-10, 10):
-    print(constree.predict(float(i)))
 
+N = 10
+x = [float(x) for x in range(N)]
+y = [float(x) for x in range(N)]
+boost = gb.GradientBooster(x, y, M, alpha, epsilon, max_depth, n_tests)
+boost.constant_model = 4.5
+boost.start_train()
+print(boost._find_residuals())
 
+print("--------------------Test prediction-------------------")
+tree_1 = dt.DecisionTree([0.0], [1.0], 0, 1, 1)
+tree_2 = dt.DecisionTree([0.0], [2.0], 0, 1, 1)
+tree_1.start_train()
+tree_2.start_train()
+pred_gb = gb.GradientBooster()
+pred_gb.trees.append(tree_1)
+pred_gb.trees.append(tree_2)
+
+print(f"Tree 1 predicts: {tree_1.predict(10)}")
+print(f"Tree 2 predicts: {tree_2.predict(10)}")
+
+print(f"Actual: 3 Predicted: {pred_gb.predict(0)}")
+
+print("-------------------Test training gradient boost------------------")
+
+print("==============Testing y = x (1 = 1 etc)=================")
+N = 30
+x = [float(x) for x in range(N)]
+y = [float(x) for x in range(N)]
+
+#       M, alpha, epsilon, max_depth, n_tests
+margin = 1
+args = [50, 1, 0, 20, 20]
+ffb = gb.GradientBooster(x, y, args[0], args[1], args[2], args[3], args[4])
+ffb.start_train()
+for i, xi in enumerate(x):
+    actual = y[i]
+    predicted = ffb.predict(xi)
+    print(f"Percent error: {(((actual + 1) - (predicted + 1)) / (actual + 1)):.3f}% Actual: {actual} Predicted: {predicted}")
+
+print("===============Testing y = x^2===================")
+N = 30
+x = [float(x) for x in range(N)]
+y = [float(xi ** 2) for xi in x]
+
+#       M, alpha, epsilon, max_depth, n_tests
+margin = 1
+args = [20, 1, 0, 20, 20]
+ffb = gb.GradientBooster(x, y, args[0], args[1], args[2], args[3], args[4])
+ffb.start_train()
+for i, xi in enumerate(x):
+    actual = y[i]
+    predicted = ffb.predict(xi)
+    print(f"Percent error: {(((actual + 1) - (predicted + 1)) / (actual + 1)):.3f}% Actual: {actual} Predicted: {predicted}")
 
 

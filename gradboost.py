@@ -10,9 +10,9 @@ Takes some 1-d input and returns a 1-d prediction
 import dectree as dt
 
 # Gradient Boosting
-class GradientBoosting:
+class GradientBooster:
 
-    def __init__(self, x:list[float], y:list[float], M:int, alpha:float, epsilon:float, max_depth:int, n_tests:int):
+    def __init__(self, x:list[float] = [0], y:list[float] = [0], M:int = 1, alpha:float = 1, epsilon:float = 0, max_depth:int = 1, n_tests:int = 1):
         self.x = x
         self.y = y
         self.M = M
@@ -23,10 +23,14 @@ class GradientBoosting:
         self.trees:list[dt.DecisionTree] = []
         self.constant_model = 0
 
+    def set_data(self, x:list[float], y:list[float]):
+        self.x = x
+        self.y = y
+
     def predict(self, x: float) -> float:
         res = self.constant_model
         for tree in self.trees:
-            res += self.alpha * tree.predict(x).value
+            res += self.alpha * tree.predict(x).prediction
         return res 
 
     def start_train(self):
@@ -38,19 +42,20 @@ class GradientBoosting:
 
         # Train constant model
         root = dt.DecisionTree([0.0], [mean], 0, 1, 1)
-        self.constant_model = root.predict(0).value # Will always predict same thing
+        root.start_train()
+        self.constant_model = root.predict(0).prediction # Will always predict same thing
 
         for _ in range(self.M):
             # Find residual from constant model
-            residuals = self.find_residuals()
+            residuals = self._find_residuals()
 
             # Train tree on residuals
-            tree = self.train_tree(self.x, residuals)
+            tree = self._train_tree(self.x, residuals)
 
             # Add tree
             self.trees.append(tree)
 
-    def find_residuals(self) -> list[float]:
+    def _find_residuals(self) -> list[float]:
         residuals = []
         for i, x in enumerate(self.x):
             predicted = self.predict(x)
@@ -58,7 +63,7 @@ class GradientBoosting:
 
         return residuals 
 
-    def train_tree(self, x:list[float], y:list[float]) -> dt.DecisionTree:
+    def _train_tree(self, x:list[float], y:list[float]) -> dt.DecisionTree:
         tree = dt.DecisionTree(x, y, self.epsilon, self.max_depth, self.n_tests)
         tree.start_train()
 
