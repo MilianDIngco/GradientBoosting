@@ -70,24 +70,3 @@ class GradientBooster:
         return tree
 
 
-'''
-# Read in csv
-filename = "project_data.csv"
-whichColumn = 1
-
-time = []
-x = []
-
-with open(filename, mode='r') as file:
-    csvFile = csv.reader(file)
-    for lines in csvFile:
-        time.append(lines[0])
-        x.append(lines[whichColumn])
-
-# Omit first entry
-time.pop(0)
-x.pop(0)
-
-time = [float(val) for val in time]
-x = [float(val) for val in x]
-'''
