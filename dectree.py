@@ -39,7 +39,7 @@ class Split:
 
 class DecisionTree:
 
-    def __init__(self, x:list[float] = [0], y:list[float] = [0], epsilon:float = 0, max_depth:int = 0, n_tests:int = 2):
+    def __init__(self, x:list[float] = [0], y:list[float] = [0], epsilon:float = 0, max_depth:int = 1, n_tests:int = 1):
         self.x = x
         self.y = y
         self.epsilon = epsilon

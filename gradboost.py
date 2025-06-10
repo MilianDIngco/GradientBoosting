@@ -1,6 +1,3 @@
-import dectree
-import csv
-
 '''
 Gradient Boosting Regresssion Algorithm
 Author: Milian Ingco
@@ -10,16 +7,65 @@ Implementation of gradient boosting algorithm for summer research
 Takes some 1-d input and returns a 1-d prediction
 
 '''
-
+import dectree as dt
 
 # Gradient Boosting
+class GradientBoosting:
 
-# Decision Tree algorithm
+    def __init__(self, x:list[float], y:list[float], M:int, alpha:float, epsilon:float, max_depth:int, n_tests:int):
+        self.x = x
+        self.y = y
+        self.M = M
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.max_depth = max_depth
+        self.n_tests = n_tests
+        self.trees:list[dt.DecisionTree] = []
+        self.constant_model = 0
 
-# Optimization criteria
-# 1\N * sum [ y_i * ln(f_ID3(x_i) + (1 - y_i) * ln(1 - f_ID3(x_i)) ]
+    def predict(self, x: float) -> float:
+        res = self.constant_model
+        for tree in self.trees:
+            res += self.alpha * tree.predict(x).value
+        return res 
+
+    def start_train(self):
+        # Find mean to set the constant model
+        mean = 0
+        for yi in self.y:
+            mean += yi
+        mean /= len(self.y)
+
+        # Train constant model
+        root = dt.DecisionTree([0.0], [mean], 0, 1, 1)
+        self.constant_model = root.predict(0).value # Will always predict same thing
+
+        for _ in range(self.M):
+            # Find residual from constant model
+            residuals = self.find_residuals()
+
+            # Train tree on residuals
+            tree = self.train_tree(self.x, residuals)
+
+            # Add tree
+            self.trees.append(tree)
+
+    def find_residuals(self) -> list[float]:
+        residuals = []
+        for i, x in enumerate(self.x):
+            predicted = self.predict(x)
+            residuals.append(self.y[i] - predicted)
+
+        return residuals 
+
+    def train_tree(self, x:list[float], y:list[float]) -> dt.DecisionTree:
+        tree = dt.DecisionTree(x, y, self.epsilon, self.max_depth, self.n_tests)
+        tree.start_train()
+
+        return tree
 
 
+'''
 # Read in csv
 filename = "project_data.csv"
 whichColumn = 1
@@ -39,4 +85,4 @@ x.pop(0)
 
 time = [float(val) for val in time]
 x = [float(val) for val in x]
-
+'''

@@ -147,7 +147,7 @@ print("Simple set")
 N = 30
 epsilon = 0
 max_depth = 100
-n_tests = 200
+n_tests = 20
 x = [float(x) for x in range(N)]
 y = []
 for i in range(5):
@@ -187,3 +187,19 @@ for i in range(N):
     input = random.random() * N
     prediction = finalboss.predict(input)
     print(f"{input}: Actual={input ** 2} Predicted={prediction}")
+
+
+# Testing making a constant model with decision tree
+x = [0.0]
+y = [0.0]
+epsilon = 0
+max_depth = 1
+n_tests = 1
+constree = dectree.DecisionTree(x, y, epsilon, max_depth, n_tests)
+constree.start_train()
+for i in range(-10, 10):
+    print(constree.predict(float(i)))
+
+
+
+
