@@ -8,14 +8,14 @@ Purpose: Train a regression decision tree on a 1-dimensional input and return an
 import sys
 
 class Split:
-    def __init__(self, min_range:float = 0, max_range:float = 0, feature_index:int = 0, feature_value:float = 0, prediction:float = 0):
+    def __init__(self, feature_index:int = 0, feature_value:float = 0, prediction:float = 0):
         self.index = feature_index
         self.value = feature_value
-        self.min_range = min_range
-        self.max_range = max_range
         self.prediction = prediction
         self.left = None
         self.right = None
+        self.n_datapoints = 0
+        self.total_values = prediction
 
     def eval(self, value:float) -> bool:
         return value > self.value
@@ -28,6 +28,13 @@ class Split:
 
     def set_prediction(self, prediction:float) -> None:
         self.prediction = prediction
+
+    def calc_prediction(self) -> None:
+        if self.n_datapoints > 0:
+            self.prediction = self.total_values / self.n_datapoints
+
+    def __str__(self) -> str:
+        return f"{self.prediction}"
 
 
 class DecisionTree:
@@ -53,7 +60,7 @@ class DecisionTree:
             else:
                 next = current_split.left
 
-        return current_split.prediction
+        return current_split
 
     def set_data(self, x:list[float], y:list[float]) -> None:
         self.x = x
@@ -64,10 +71,18 @@ class DecisionTree:
 
     def start_train(self):
         self._train(self.root, 0, len(self.y) - 1, 0)
+        self._assign_predictions()
+
+    def _assign_predictions(self):
+        for i, value in enumerate(self.x):
+            prediction = self.predict(value)
+            prediction.n_datapoints += 1
+            prediction.total_values += self.y[i]
+            prediction.calc_prediction()
         
     def _train(self, split, min_index, max_index, depth):
         # If not enough elements to split by, stop
-        if max_index - min_index < 3:
+        if max_index - min_index < 1:
             return
         # If not reached maximum depth, stop
         if depth > self.max_depth:
@@ -98,9 +113,9 @@ class DecisionTree:
     # Returns a tuple of the best found split value and the variance reduction
     def _find_best_split(self, min_index, max_index):
         # Find range
-        labels = self.y[min_index:max_index]
-        min_value = min(labels)
-        max_value = max(labels)
+        values = self.x[min_index:max_index]
+        min_value = min(values)
+        max_value = max(values)
         split_width = (max_value - min_value) / self.n_tests
         split_range = []
         current = min_value
@@ -132,8 +147,12 @@ class DecisionTree:
                 break
 
         # Find variance of left side
-        left_variance = self._calc_variance(min_index, index - 1)
-        right_variance = self._calc_variance(index, max_index)
+        left_variance = 0
+        if index - min_index != 0:
+            left_variance = self._calc_variance(min_index, index)
+        right_variance = 0
+        if max_index - index != 0:
+            right_variance = self._calc_variance(index, max_index)
 
         # Find weighted variance
         n_left = (index - min_index)
@@ -144,6 +163,8 @@ class DecisionTree:
         return current_variance - weighted_variance
 
     # Calculates the variance of a range of values
+    # min_index is where it starts, inclusive
+    # max_index is where it ends, exclusive
     def _calc_variance(self, min_index:int, max_index:int) -> float:
         n = max_index - min_index
         mean = sum(self.y[min_index:max_index]) / n
