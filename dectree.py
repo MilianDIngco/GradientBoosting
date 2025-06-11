@@ -13,6 +13,10 @@ Future features:
 import sys
 import math
 
+class Vector:
+    def __init__(self):
+        pass
+
 class Split:
     def __init__(self, feature_index:int = 0, feature_value:float = 0, prediction:float = 0):
         self.index = feature_index
@@ -58,12 +62,12 @@ class Split:
 
 class DecisionTree:
 
-    def __init__(self, x:list[float] = [0], y:list[float] = [0], epsilon:float = 0, max_depth:int = 1, n_tests:int = 1, is_regression:bool = True):
+    def __init__(self, x:list[float] = [0], y:list[float] = [0], epsilon:float = 0, max_depth:int = 1, n_split_samples:int = 1, is_regression:bool = True):
         self.x = x
         self.y = y
         self.epsilon = epsilon
         self.max_depth = max_depth
-        self.n_tests = n_tests
+        self.n_split_samples = n_split_samples
         self.root = Split()
         self.leafs:list[Split] = []
 
@@ -143,7 +147,7 @@ class DecisionTree:
         values = self.x[min_index:max_index]
         min_value = min(values)
         max_value = max(values)
-        split_width = (max_value - min_value) / self.n_tests
+        split_width = (max_value - min_value) / self.n_split_samples
         split_range = []
         current = min_value
         while current < max_value:
@@ -205,6 +209,10 @@ class DecisionTree:
     def _calc_entropy(self, min_index:int, max_index:int) -> float:
         n = max_index - min_index
         f_ID3 = (1 / n) * sum(self.y[min_index:max_index])
-
-        H = -f_ID3 * math.log(f_ID3) - (1 - f_ID3) * math.log(1 - f_ID3)
+        
+        H = 0
+        if f_ID3 > 0:
+            H += -f_ID3 * math.log(f_ID3)
+        if f_ID3 < 1:
+            H += -(1 - f_ID3) * math.log(1 - f_ID3)
         return H

@@ -3,6 +3,10 @@ import gradboost as gb
 import random
 import sys
 
+def list_to_data(arr):
+    pass
+
+
 def dt_prediction():
     print("--------------------Decision Tree Prediction-----------------")
     tree = dt.DecisionTree()
@@ -137,7 +141,7 @@ def dt_best_split():
     x = [float(x) for x in range(30)]
 
     tree = dt.DecisionTree()
-    tree.n_tests = 30
+    tree.n_split_samples = 30
 
     print("Best split for good set")
     tree.set_data(x, good_set)
@@ -157,7 +161,7 @@ def dt_training():
     N = 30
     epsilon = 0
     max_depth = 20
-    n_tests = 20
+    n_split_samples = 20
     x = [float(x) for x in range(N)]
     y = []
     for i in range(5):
@@ -173,26 +177,26 @@ def dt_training():
     for i in range(5):
         y.append(200)
 
-    finalboss = dt.DecisionTree(x, y, epsilon, max_depth, n_tests)
+    finalboss = dt.DecisionTree(x, y, epsilon, max_depth, n_split_samples)
     finalboss.start_train()
     for leaf in finalboss.leafs:
         print(leaf.datapoints)
     for i in range(N):
         prediction = finalboss.predict(x[i])
-        print(f"{i}: Actual={y[i]} Predicted={prediction.datapoints}")
+        print(f"{i}: Actual={y[i]} Predicted={prediction}")
 
     print("Quadratic")
     N = 30
     epsilon = 0
     max_depth = 100
-    n_tests = 20
+    n_split_samples = 20
     x = [float(i) for i in range(N)]
     y = [val ** 2 for val in x]
-    finalboss = dt.DecisionTree(x, y, epsilon, max_depth, n_tests)
+    finalboss = dt.DecisionTree(x, y, epsilon, max_depth, n_split_samples)
     finalboss.start_train()
     for i in range(N):
         prediction = finalboss.predict(x[i])
-        print(f"{i}: Actual={y[i]} Predicted={prediction.datapoints}")
+        print(f"{i}: Actual={y[i]} Predicted={prediction}")
 
     print("Random inputs (should be the input squared)")
     for i in range(N):
@@ -213,19 +217,13 @@ def dt_constant_tree():
 def gb_residuals():
     # Test finding residuals
     print("---------------------Finding residuals-------------------")
-    M = 0
-    alpha = 1
-    epsilon = 0
-    max_depth = 1
-    n_tests = 1
-
     N = 10
     x = [float(x) for x in range(N)]
     y = [float(x) for x in range(N)]
-    boost = gb.GradientBooster(x, y, M, alpha, epsilon, max_depth, n_tests)
+    boost = gb.GradientBooster(x, y, M=0, alpha=1, epsilon=0, max_depth=1, n_split_samples=1)
     boost.constant_model = 4.5
     boost.start_train()
-    print(boost._find_residuals())
+    print(boost.find_gradient())
 
 def gb_prediction():
     print("--------------------Test prediction-------------------")
@@ -235,7 +233,7 @@ def gb_prediction():
     tree_2 = dt.DecisionTree([0.0], [val2], 1, 1, 1)
     tree_1.start_train()
     tree_2.start_train()
-    pred_gb = gb.GradientBooster()
+    pred_gb = gb.GradientBooster(M=3)
     pred_gb.trees.append(tree_1)
     pred_gb.trees.append(tree_2)
 
@@ -252,7 +250,7 @@ def gb_training():
     x = [float(x) for x in range(N)]
     y = [float(x) for x in range(N)]
 
-    #       M, alpha, epsilon, max_depth, n_tests
+    #       M, alpha, epsilon, max_depth, n_split_samples
     args = [50, 1, 0, 20, 20]
     ffb = gb.GradientBooster(x, y, args[0], args[1], args[2], args[3], args[4])
     ffb.start_train()
@@ -266,7 +264,7 @@ def gb_training():
     x = [float(x) for x in range(N)]
     y = [float(xi ** 2) for xi in x]
 
-    #       M, alpha, epsilon, max_depth, n_tests
+    #       M, alpha, epsilon, max_depth, n_split_samples
     args = [20, 1, 0, 20, 20]
     ffb = gb.GradientBooster(x, y, args[0], args[1], args[2], args[3], args[4])
     ffb.start_train()
@@ -275,6 +273,133 @@ def gb_training():
         predicted = ffb.predict(xi)
         print(f"Percent error: {(((actual + 1) - (predicted + 1)) / (actual + 1)):.3f}% Actual: {actual} Predicted: {predicted}")
 
+def dt_calc_entropy():
+    N = 20
+    x = [float(i) for i in range(N)]
+
+    # Testing high entropy sets
+    y = [float(i % 2) for i in range(N)]
+    tree = dt.DecisionTree(x, y, is_regression=False)
+    print(y)
+    print(f"High entropy: {tree._calc_entropy(0, N)}")
+
+    # Testing low entropy sets
+    y = [1 for _ in range(N)]
+    tree.set_data(x, y)
+    print(y)
+    print(f"Low entropy: {tree._calc_entropy(0, N)}")
+
+    # Testing random sets (should be pretty high entropy)
+    y = [float(random.randint(0, 1)) for _ in range(N)]
+    tree.set_data(x, y)
+    print(y)
+    print(f"Random set entropy: {tree._calc_entropy(0, N)}")
+
+def dt_eval_entropy_split():
+    N = 20
+    x = [float(i) for i in range(N)]
+    tree = dt.DecisionTree(is_regression=False)
+
+    # Testing set with entropy thats easy to split
+    y = []
+    for _ in range(N // 2):
+        y.append(0.0)
+    for _ in range(N // 2, N):
+        y.append(1.0)
+
+    tree.set_data(x, y)
+    original_entropy = tree._calc_entropy(0, N)
+    print("Easy to split set")
+    print(y)
+    print(f"Ideal split is around {N // 2}? might be -1")
+    for i in range(N):
+        split = dt.Split(feature_value=i)
+        print(f"Split evaluation at index {i} is {tree._eval_split(split, 0, N, original_entropy)}")
+
+    # Testing uniform set
+    y = [1.0 for _ in range(N)]
+    
+    tree.set_data(x, y)
+    original_entropy = tree._calc_entropy(0, N)
+    print("Uniform set")
+    print(y)
+    print(f"Ideal split is any of them? perhaps? or the first element")
+    for i in range(N):
+        split = dt.Split(feature_value=i)
+        print(f"Split evaluation at index {i} is {tree._eval_split(split, 0, N, original_entropy)}")
+
+def dt_find_best_entropy_split():
+    N = 20
+    x = [float(i) for i in range(N)]
+    tree = dt.DecisionTree(n_split_samples=20, is_regression=False)
+
+    # Testing set with entropy thats easy to split 
+    y = []
+    for _ in range(N // 2):
+        y.append(0.0)
+    for _ in range(N // 2, N):
+        y.append(1.0)
+
+    tree.set_data(x, y)
+    print("Finding best split for easy to split data")
+    print(y)
+    results = tree._find_best_split(0, N)
+    print(f"Best split: {results[0]} Reduced entropy: {results[1]} Original entropy: {tree._calc_entropy(0, N)}")
+    
+    # Testing uniform set
+    y = [1.0 for _ in range(N)]
+    
+    tree.set_data(x, y)
+    print("Finding best split for uniform data")
+    print(y)
+    results = tree._find_best_split(0, N)
+    print(f"Best split: {results[0]} Reduced entropy: {results[1]} Original entropy: {tree._calc_entropy(0, N)}")
+
+def dt_classification_training():
+    print("Simple set")
+    N = 30
+    epsilon = 0
+    max_depth = 20
+    n_split_samples = 20
+    x = [float(x) for x in range(N)]
+    y = []
+    for _ in range(5):
+        y.append(0.0)
+    for _ in range(10):
+        y.append(1.0)
+    for _ in range(5):
+        y.append(0.0)
+    for _ in range(3):
+        y.append(1.0)
+    for _ in range(2):
+        y.append(0.0)
+    for _ in range(5):
+        y.append(1.0)
+
+    finalboss = dt.DecisionTree(x, y, epsilon, max_depth, n_split_samples, is_regression=False)
+    finalboss.start_train()
+    for i in range(N):
+        prediction = finalboss.predict(x[i])
+        print(f"{i}: Actual={y[i]} Predicted={prediction}")
+
+    print("Random inputs")
+    for _ in range(N):
+        input = random.random() * N
+        prediction = finalboss.predict(input)
+        print(f"{input}: Actual={y[round(input)]} Predicted={prediction}")
+
+def gb_calc_loss():
+    pass
+
+def gb_find_best_rho():
+    pass
+
+def gb_find_partials():
+    pass
+
+def gb_training_classification():
+    pass
+
 def clear_terminal():
     sys.stdout.write('\033[2J\033[H')
     sys.stdout.flush()
@@ -282,7 +407,9 @@ def clear_terminal():
 
 # gb_residuals(), gb_prediction(), gb_training()
 
-dt_tests = [dt_prediction, dt_calc_variance, dt_split_evaluation, dt_best_split, dt_training, dt_constant_tree]
+dt_tests = [dt_prediction, dt_calc_variance, dt_split_evaluation, dt_best_split, dt_training, dt_constant_tree, 
+            dt_calc_entropy, dt_eval_entropy_split, dt_find_best_entropy_split, 
+            dt_classification_training]
 
 gb_tests = [gb_residuals, gb_prediction, gb_training]
 
@@ -295,7 +422,7 @@ while True:
         break
 
     if user_input == '1':
-        user_input = input("Enter test: 1-6\n1: dt_prediction\n2: dt_calc_variance\n3: dt_split_evaluation\n4: dt_best_split\n5: dt_training\n6: dt_constant_tree\nq: quit\n")
+        user_input = input("Enter test: 1-6\n1: dt_prediction\n2: dt_calc_variance\n3: dt_split_evaluation\n4: dt_best_split\n5: dt_training\n6: dt_constant_tree\n7: dt_calc_entropy\n8: dt_eval_entropy_split\n9: dt_find_best_entropy_split\n10: dt_classification_training\nq: quit\n")
         if user_input == 'q':
             clear_terminal()
             break
