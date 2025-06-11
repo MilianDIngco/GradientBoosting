@@ -3,10 +3,10 @@ import gradboost as gb
 import matplotlib.pyplot as plt
 import numpy as np
 
-whichColumn = 1
+whichColumn = 10
 
 # Default Gradient Booster Params
-M = 5
+M = 10
 alpha = 1
 epsilon = 0 
 max_depth = 5

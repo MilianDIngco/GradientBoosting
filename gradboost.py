@@ -41,9 +41,7 @@ class GradientBooster:
         mean /= len(self.y)
 
         # Train constant model
-        root = dt.DecisionTree([0.0], [mean], 0, 1, 1)
-        root.start_train()
-        self.constant_model = root.predict(0).prediction # Will always predict same thing
+        self.constant_model = mean
 
         for _ in range(self.M):
             # Find residual from constant model
