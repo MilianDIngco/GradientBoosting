@@ -30,10 +30,10 @@ class GradientBooster:
         self.is_regression = is_regression
         self.using_rho = using_rho
         if self.is_regression:
-            self.rho = [1 for _ in range(M)]
+            self.rho = [1.0 for _ in range(M)]
             self.find_gradient = self._find_residuals_regression
         else:
-            self.rho = []
+            self.rho:list[float] = []
             self.find_gradient = self._find_partial_classification
 
     def set_data(self, x:list[float], y:list[float]):
@@ -61,7 +61,7 @@ class GradientBooster:
         if self.is_regression:
             self.constant_model = mean
         else:
-            self.constant_model = mean / (1 - mean)
+            self.constant_model = math.log(mean / (1 - mean))
 
         for _ in range(self.M):
             # Find residual from model
@@ -89,14 +89,15 @@ class GradientBooster:
     # Finds the partial of the loss function with respect to the model for every y_i
     def _find_partial_classification(self) -> list[float]:
         g = []
-        for yi in self.y:
-            g.append(1 / (math.exp(self.predict(yi)) + 1))
+        for i, xi in enumerate(self.x):
+            predicted = self.predict(xi)
+            g.append(self.y[i] - predicted)
         return g
 
     # Tests rho values from rho min to rho max sampled uniformly n times
     def _find_best_rho(self, tree:dt.DecisionTree) -> float:
-        max_loss = sys.float_info.min
-        test_values = [rho / self.n_rho_samples for rho in range(self.rho_min, self.rho_max)]
+        min_loss = sys.float_info.max
+        test_values = [self.rho_min + i * (self.rho_max - self.rho_min) / self.n_rho_samples for i in range(self.n_rho_samples)]
         best_rho = self.rho_min
 
         # Add tree and each value temporarily to test each rho value
@@ -104,9 +105,9 @@ class GradientBooster:
         for value in test_values:
             self.rho.append(value)
             loss = self._calc_loss()
-            if loss > max_loss:
+            if loss < min_loss:
                 best_rho = value
-                max_loss = loss
+                min_loss = loss
             self.rho.pop(-1)
         self.trees.pop(-1)
 
@@ -124,7 +125,7 @@ class GradientBooster:
 
     # Train a tree on a given dataset
     def _train_tree(self, x:list[float], y:list[float]) -> dt.DecisionTree:
-        tree = dt.DecisionTree(x, y, self.epsilon, self.max_depth, self.n_split_samples)
+        tree = dt.DecisionTree(x, y, self.epsilon, self.max_depth, self.n_split_samples, self.is_regression)
         tree.start_train()
 
         return tree

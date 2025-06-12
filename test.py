@@ -388,17 +388,48 @@ def dt_classification_training():
         prediction = finalboss.predict(input)
         print(f"{input}: Actual={y[round(input)]} Predicted={prediction}")
 
-def gb_calc_loss():
-    pass
-
 def gb_find_best_rho():
-    pass
+    return
 
 def gb_find_partials():
-    pass
+    return
 
 def gb_training_classification():
-    pass
+    print("Training classification")
+    N = 10
+    x = [float(i) for i in range(N)]
+
+    y = [0.,0,0,0,0,1,1,1,1,1]
+    print("Simple set")
+    print(y)
+
+    gradboost_class = gb.GradientBooster(x, y, M=10, alpha=1, epsilon=0, max_depth=20, n_split_samples=20, n_rho_samples=20, rho_min=0, rho_max=2, using_rho=True, is_regression=False)
+    gradboost_class.start_train()
+
+    for i in range(N):
+        print(f"input: {gradboost_class.x[i]} actual: {gradboost_class.y[i]} predicted: {gradboost_class.predict(gradboost_class.x[i])}")
+
+
+    N = 30
+
+    x = [float(i) for i in range(N)]
+    y = []
+
+    for i in range(N):
+        if random.random() > 0.5:
+            y.append(0)
+        else:
+            y.append(1)
+
+    print("Random set")
+    print(y)
+
+    gradboost_class.set_data(x, y)
+    gradboost_class.start_train()
+    for i in range(N):
+        print(f"input: {gradboost_class.x[i]} actual: {gradboost_class.y[i]} predicted: {gradboost_class.predict(gradboost_class.x[i])}")
+
+
 
 def clear_terminal():
     sys.stdout.write('\033[2J\033[H')
@@ -411,12 +442,20 @@ dt_tests = [dt_prediction, dt_calc_variance, dt_split_evaluation, dt_best_split,
             dt_calc_entropy, dt_eval_entropy_split, dt_find_best_entropy_split, 
             dt_classification_training]
 
-gb_tests = [gb_residuals, gb_prediction, gb_training]
+gb_tests = [gb_residuals, gb_prediction, gb_training, gb_find_best_rho, gb_find_partials, gb_training_classification]
 
 user_input = ''
 while True:
-    user_input = input("Enter option: \n1: decision tree\n2: gradient boosting\nq: quit\n")
+    user_input = input("Enter option: \n1: decision tree\n2: gradient boosting\na: run all\nq: quit\n")
     clear_terminal()
+
+    if user_input == 'a':
+        for test in dt_tests:
+            test()
+        for test in gb_tests:
+            test()
+        continue
+
     if user_input == 'q':
         clear_terminal()
         break
@@ -431,7 +470,7 @@ while True:
             user_input = int(user_input) - 1
             dt_tests[user_input]()
     elif user_input == '2':
-        user_input = input("Enter test: 1-3\n1: gb_residuals\n2: gb_prediction\n3: gb_training\nq: quit\n")
+        user_input = input("Enter test: 1-3\n1: gb_residuals\n2: gb_prediction\n3: gb_training\n4: gb_find_best_rho\n5: gb_find_partials\n6: gb_training_classification\nq: quit\n")
         if user_input == 'q':
             clear_terminal()
             break
